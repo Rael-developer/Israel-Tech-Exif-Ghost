@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Israel Tech | Privacy OSINT</title>
+    <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-color: #0d0d0d;
+            --panel-bg: rgba(26, 26, 26, 0.92); /* Ajustado para leve transparência sobre o Matrix */
+            --neon-green: #00ff41;
+            --neon-blue: #008f11;
+            --text-color: #e0e0e0;
+            --danger-red: #ff3333;
+            --warning-yellow: #ffb000;
+        }
+
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: var(--bg-color); /* Fallback caso o canvas falhe */
+            color: var(--text-color);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden; /* Evita rolagem horizontal pelo Matrix */
+        }
+
+        /* Efeito Matrix Fundo */
+        #matrix {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            opacity: 0.15; /* Sutil para não atrapalhar a leitura */
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background-color: var(--panel-bg);
+            border: 1px solid var(--neon-blue);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.2);
+            margin-bottom: 20px; 
+            backdrop-filter: blur(2px); /* Efeito de vidro sutil no mobile */
+        }
+
+        h1 {
+            color: var(--neon-green);
+            font-size: clamp(1.2rem, 4vw, 1.8rem);
+            text-align: center;
+            text-transform: uppercase;
+            text-shadow: 0 0 5px var(--neon-green);
+            margin-top: 0;
+            margin-bottom: 25px;
+            word-wrap: break-word;
+        }
+
+        .info-box {
+            background-color: rgba(0, 255, 65, 0.05);
+            border-left: 3px solid var(--neon-green);
+            padding: 15px;
+            margin-bottom: 25px;
+            border-radius: 0 5px 5px 0;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .info-box h3 {
+            color: var(--neon-green);
+            margin-top: 0;
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+
+        .info-box strong {
+            color: var(--neon-blue);
+        }
+
+        .info-box p {
+            margin: 8px 0;
+        }
+
+        .upload-section {
+            display: block;
+            border: 2px dashed var(--neon-blue);
+            padding: 30px 15px;
+            text-align: center;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        .upload-section:hover {
+            border-color: var(--neon-green);
+            background-color: rgba(0, 255, 65, 0.1);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px;
+            background-color: rgba(0,0,0,0.5);
+            color: var(--neon-green);
+            border: 1px solid var(--neon-green);
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-align: center;
+            text-transform: uppercase;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background-color: var(--neon-green);
+            color: #000;
+            box-shadow: 0 0 10px var(--neon-green);
+        }
+
+        .btn-danger {
+            color: var(--danger-red);
+            border-color: var(--danger-red);
+        }
+
+        .btn-danger:hover {
+            background-color: var(--danger-red);
+            color: white;
+            box-shadow: 0 0 10px var(--danger-red);
+        }
+        
+        .btn-warning {
+            color: var(--warning-yellow);
+            border-color: var(--warning-yellow);
+        }
+
+        .btn-warning:hover {
+            background-color: var(--warning-yellow);
+            color: #000;
+            box-shadow: 0 0 10px var(--warning-yellow);
+        }
+
+        .results {
+            background-color: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 3px solid var(--neon-green);
+            margin-top: 20px;
+            display: none;
+            word-wrap: break-word;
+            overflow-x: hidden;
+        }
+
+        .section-title {
+            color: var(--neon-green);
+            border-bottom: 1px dashed #333;
+            padding-bottom: 5px;
+            margin-top: 15px;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            word-break: break-all;
+        }
+
+        .data-row {
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @media (min-width: 600px) {
+            .data-row {
+                flex-direction: row;
+                justify-content: space-between;
+            }
+        }
+
+        .label {
+            color: #888;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .value {
+            color: #fff;
+            word-break: break-word;
+        }
+
+        a.map-link {
+            display: block;
+            margin-top: 15px;
+            color: var(--bg-color);
+            background-color: var(--neon-green);
+            padding: 10px;
+            text-align: center;
+            text-decoration: none;
+            font-weight: bold;
+            border-radius: 4px;
+        }
+
+        #imagePreview {
+            width: 100%;
+            height: auto;
+            max-height: 300px;
+            object-fit: contain;
+            border-radius: 4px;
+            margin-top: 15px;
+            display: none;
+            border: 1px solid #333;
+            background-color: #000;
+        }
+
+        footer {
+            margin-top: auto; 
+            text-align: center;
+            font-size: 0.8rem;
+            color: #777; /* Pouco mais claro para sobressair do Matrix */
+            padding: 10px;
+            background-color: rgba(0,0,0,0.6); /* Fundo no rodapé pra não sumir */
+            border-radius: 4px;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        footer .dev-name {
+            color: var(--neon-green);
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-shadow: 0 0 2px var(--neon-green);
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="matrix"></canvas>
+
+    <div class="container">
+        <h1>Israel Tech EXIF Ghost</h1>
+
+        <div class="info-box" id="infoBox">
+            <h3>>_ SOBRE A FERRAMENTA</h3>
+            <p><strong>Propósito (OSINT):</strong> Fotografias tiradas por smartphones geralmente embutem metadados ocultos (padrão EXIF). Estes dados podem revelar o modelo do aparelho, a data exata e, principalmente, as coordenadas de GPS do local onde a foto foi tirada. Esta ferramenta audita essas informações para evitar vazamentos de privacidade.</p>
+            <p><strong>Como Funciona (Privacidade):</strong> Diferente de outras ferramentas, este script é <em>Client-Side</em>. A leitura binária da imagem ocorre inteiramente na memória RAM do seu próprio navegador. Nenhum arquivo é enviado para servidores web.</p>
+            <p><strong>Sanitização:</strong> Ao clicar em Limpar Metadados, a ferramenta redesenha os pixels em uma nova estrutura de arquivo, descartando todo o cabeçalho rastreável.</p>
+        </div>
+        
+        <label class="upload-section" id="uploadLabel" for="fileInput">
+            <span style="color: var(--neon-green); font-size: 1.1rem;">[+] SELECIONAR IMAGEM</span>
+            <p style="font-size: 0.85rem; color: #888; margin-top: 10px;">Toque para abrir a galeria (Apenas JPG/JPEG)</p>
+        </label>
+        <input type="file" id="fileInput" accept="image/jpeg, image/jpg">
+
+        <img id="imagePreview" alt="Preview da Imagem">
+
+        <div id="resultsPanel" class="results">
+            <div id="metaDataOutput"></div>
+            
+            <div class="btn-group">
+                <button id="clearBtn" class="btn btn-danger">Sanitizar (Limpar Metadados)</button>
+                <button id="removePhotoBtn" class="btn btn-warning">Remover Foto / Nova Análise</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        >_ Desenvolvido por <span class="dev-name">Israel Tech © 2026</span><br>
+        <span style="font-size: 0.7rem;">Pesquisa em Cibersegurança & Proteção de Dados</span>
+    </footer>
+
+    <script>
+        // SCRIPT DO EFEITO MATRIX
+        const canvas = document.getElementById('matrix');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const katakana = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズヅブプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン';
+        const latin = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const nums = '0123456789';
+        const alphabet = katakana + latin + nums;
+
+        const fontSize = 16;
+        const columns = canvas.width / fontSize;
+        const rainDrops = Array(Math.floor(columns)).fill(1);
+
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#0F0';
+            ctx.font = fontSize + 'px monospace';
+
+            for(let i = 0; i < rainDrops.length; i++) {
+                const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+                ctx.fillText(text, i * fontSize, rainDrops[i] * fontSize);
+                
+                if(rainDrops[i] * fontSize > canvas.height && Math.random() > 0.975){
+                    rainDrops[i] = 0;
+                }
+                rainDrops[i]++;
+            }
+        }
+        setInterval(drawMatrix, 35);
+
+        // Resize Canvas ao girar o celular
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        // SCRIPT DO EXTRATOR EXIF
+        const fileInput = document.getElementById('fileInput');
+        const uploadLabel = document.getElementById('uploadLabel');
+        const infoBox = document.getElementById('infoBox');
+        const resultsPanel = document.getElementById('resultsPanel');
+        const metaDataOutput = document.getElementById('metaDataOutput');
+        const imagePreview = document.getElementById('imagePreview');
+        const clearBtn = document.getElementById('clearBtn');
+        const removePhotoBtn = document.getElementById('removePhotoBtn');
+        
+        let currentFile = null;
+
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            currentFile = file;
+            const previewURL = URL.createObjectURL(file);
+            imagePreview.src = previewURL;
+            imagePreview.style.display = 'block';
+            
+            uploadLabel.style.display = 'none'; 
+            infoBox.style.display = 'none'; 
+
+            analyzeImage(file);
+        });
+
+        removePhotoBtn.addEventListener('click', function() {
+            currentFile = null;
+            fileInput.value = ''; 
+            imagePreview.src = '';
+            imagePreview.style.display = 'none';
+            resultsPanel.style.display = 'none';
+            metaDataOutput.innerHTML = '';
+            
+            uploadLabel.style.display = 'block'; 
+            infoBox.style.display = 'block'; 
+        });
+
+        function analyzeImage(file) {
+            metaDataOutput.innerHTML = '<span class="value" style="color: var(--warning-yellow);">Extraindo dados brutos... Aguarde.</span>';
+            resultsPanel.style.display = 'block';
+
+            EXIF.getData(file, function() {
+                const fileSizeKB = (file.size / 1024).toFixed(2);
+                let outputHtml = `
+                    <div class="section-title">>_ INFO DO ARQUIVO</div>
+                    <div class="data-row"><span class="label">Nome:</span> <span class="value">${file.name}</span></div>
+                    <div class="data-row"><span class="label">Tamanho:</span> <span class="value">${fileSizeKB} KB</span></div>
+                    <div class="data-row"><span class="label">Tipo MIME:</span> <span class="value">${file.type}</span></div>
+                `;
+
+                let allTags = EXIF.getAllTags(this);
+                outputHtml += `<div class="section-title">>_ DADOS EXIF (CÂMERA/SOFTWARE)</div>`;
+
+                if (Object.keys(allTags).length === 0) {
+                    outputHtml += `<div class="data-row"><span class="value" style="color:#888;">Nenhum dado EXIF encontrado na imagem.</span></div>`;
+                } else {
+                    for (let tag in allTags) {
+                        if (tag === "thumbnail" || tag === "MakerNote" || tag === "UserComment") continue;
+                        
+                        let val = allTags[tag];
+                        
+                        if (typeof val === 'object' && val != null) {
+                            if (val.numerator && val.denominator) {
+                                val = val.denominator === 1 ? val.numerator : `${val.numerator}/${val.denominator}`;
+                            } else if (Array.isArray(val)) {
+                                val = val.join(', ');
+                            } else {
+                                val = JSON.stringify(val);
+                            }
+                        }
+
+                        if (typeof val === 'string' && val.length > 50) {
+                            val = val.substring(0, 47) + '...';
+                        }
+
+                        outputHtml += `<div class="data-row"><span class="label">${tag}:</span> <span class="value">${val}</span></div>`;
+                    }
+                }
+
+                const gpsLat = EXIF.getTag(this, "GPSLatitude");
+                const gpsLatRef = EXIF.getTag(this, "GPSLatitudeRef");
+                const gpsLon = EXIF.getTag(this, "GPSLongitude");
+                const gpsLonRef = EXIF.getTag(this, "GPSLongitudeRef");
+
+                outputHtml += `<div class="section-title" style="color: var(--danger-red);">>_ LOCALIZAÇÃO / GPS</div>`;
+
+                if (gpsLat && gpsLon) {
+                    const latDecimal = convertDMSToDecimal(gpsLat, gpsLatRef);
+                    const lonDecimal = convertDMSToDecimal(gpsLon, gpsLonRef);
+                    const mapsLink = `https://www.google.com/maps?q=$${latDecimal},${lonDecimal}`;
+
+                    outputHtml += `
+                        <div class="data-row"><span class="label" style="color: var(--danger-red);">ALERTA:</span> <span class="value" style="color: var(--danger-red);">Coordenadas expostas!</span></div>
+                        <div class="data-row"><span class="label">Latitude:</span> <span class="value">${latDecimal.toFixed(6)}</span></div>
+                        <div class="data-row"><span class="label">Longitude:</span> <span class="value">${lonDecimal.toFixed(6)}</span></div>
+                        <a href="${mapsLink}" target="_blank" class="map-link">ABRIR NO GOOGLE MAPS</a>
+                    `;
+                } else {
+                    outputHtml += `<div class="data-row"><span class="value" style="color: var(--neon-green);">[+] Limpo. Sem coordenadas de GPS.</span></div>`;
+                }
+
+                metaDataOutput.innerHTML = outputHtml;
+            });
+        }
+
+        function convertDMSToDecimal(dmsArray, ref) {
+            if (!dmsArray || dmsArray.length !== 3) return 0;
+            const degrees = dmsArray[0].numerator / dmsArray[0].denominator;
+            const minutes = dmsArray[1].numerator / dmsArray[1].denominator;
+            const seconds = dmsArray[2].numerator / dmsArray[2].denominator;
+            let decimal = degrees + (minutes / 60) + (seconds / 3600);
+            if (ref === "S" || ref === "W") decimal = decimal * -1;
+            return decimal;
+        }
+
+        clearBtn.addEventListener('click', function() {
+            if (!currentFile) return;
+
+            clearBtn.textContent = "Processando...";
+            clearBtn.style.opacity = "0.7";
+
+            const img = new Image();
+            const url = URL.createObjectURL(currentFile);
+            
+            img.onload = function() {
+                const canvasData = document.createElement('canvas');
+                canvasData.width = img.width;
+                canvasData.height = img.height;
+                const ctxData = canvasData.getContext('2d');
+                ctxData.drawImage(img, 0, 0);
+                
+                canvasData.toBlob(function(blob) {
+                    if(!blob) {
+                        alert("Erro de memória ao processar imagem.");
+                        clearBtn.textContent = "Sanitizar (Limpar Metadados)";
+                        clearBtn.style.opacity = "1";
+                        return;
+                    }
+
+                    const cleanUrl = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = cleanUrl;
+                    a.download = "IsraelTech_Imagem_Limpa.jpg";
+                    
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    
+                    URL.revokeObjectURL(url);
+                    URL.revokeObjectURL(cleanUrl);
+                    
+                    clearBtn.textContent = "Sanitizar (Limpar Metadados)";
+                    clearBtn.style.opacity = "1";
+                    
+                    alert("A imagem foi limpa da memória com sucesso! Autorize o download se o navegador pedir.");
+                }, 'image/jpeg', 0.90);
+            };
+            
+            img.src = url;
+        });
+    </script>
+</body>
+</html>
+

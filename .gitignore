@@ -1,0 +1,11 @@
+# Arquivos do sistema Android
+.thumblink/
+.Thumbs.db
+
+# Backups do Bloco de Notas ou editores
+*.bak
+*.tmp
+
+# Logs
+*.log
+
