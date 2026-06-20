@@ -6,8 +6,10 @@
   <img src="https://img.shields.io/badge/Platform-Mobile%20%2F%20Web-black?style=for-the-badge" alt="Mobile Web">
 </p>
 
-![Israel Tech Exif Ghost](Preview01.png)
+![removedor de metadados](Preview01.png)
+
 🔗 **Acesse a aplicação online:** [https://exifghost.netlify.app/](https://exifghost.netlify.app/)
+
  **Israel Tech EXIF Ghost** é uma aplicação web de página única (*Single Page Application*) projetada para auditar, analisar e sanitizar metadados ocultos em imagens (JPEG/JPG). Com uma interface inspirada em terminais de comando (*Cyberpunk/Matrix*), a ferramenta foca na soberania dos dados e na privacidade física do usuário, operando de forma 100% offline.
 
 ---
