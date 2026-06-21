@@ -422,8 +422,7 @@
                 if (gpsLat && gpsLon) {
                     const latDecimal = convertDMSToDecimal(gpsLat, gpsLatRef);
                     const lonDecimal = convertDMSToDecimal(gpsLon, gpsLonRef);
-                    const mapsLink = `https://www.google.com/maps?q=$${latDecimal},${lonDecimal}`;
-
+                    const mapsLink = `https://www.google.com/maps?q=${latDecimal},${lonDecimal}`;
                     outputHtml += `
                         <div class="data-row"><span class="label" style="color: var(--danger-red);">ALERTA:</span> <span class="value" style="color: var(--danger-red);">Coordenadas expostas!</span></div>
                         <div class="data-row"><span class="label">Latitude:</span> <span class="value">${latDecimal.toFixed(6)}</span></div>
