@@ -20,7 +20,7 @@ Sempre que uma fotografia é tirada por um smartphone ou câmera digital moderna
 
 ### Os Riscos Práticos (Vetores de Ataque em OSINT):
 * **Vazamento de Geolocalização Extrema:** Se o GPS do aparelho estiver ativo, as coordenadas exatas (Latitude e Longitude) da captura são salvas. Ao publicar essa imagem em fóruns, blogs ou plataformas que não tratam os arquivos, qualquer agente de ameaça pode mapear a rotina da vítima, encontrar seu endereço residencial ou local de trabalho.
-* **Vazamento de Infraestrutura (Hardware/Software):** O EXIF expõe a marca do dispositivo, modelo, versão do sistema operacional e softwares de edição utilizados. Em engenharia social ou *penteados*, essas informações servem para identificar vulnerabilidades específicas do ecossistema do alvo.
+* **Vazamento de Infraestrutura (Hardware/Software):** O EXIF expõe a marca do dispositivo, modelo, versão do sistema operacional e softwares de edição utilizados. Em engenharia social ou testes de invasão *(pentests)*,, essas informações servem para identificar vulnerabilidades específicas do ecossistema do alvo.
 * **Invasão de Privacidade Centralizada:** A maioria das ferramentas de análise EXIF disponíveis na internet exige que o usuário envie a imagem para um servidor de terceiros. Isso cria um novo risco: transferir dados sensíveis e fotos pessoais para servidores desconhecidos que podem registrar logs.
 
 ---
